@@ -1,8 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../data/mock_data.dart';
+import '../data/database.dart';
 
 class AppState extends ChangeNotifier {
   int _selectedIndex = 1; // Start on News (center)
@@ -14,6 +13,7 @@ class AppState extends ChangeNotifier {
   String _catalogTab = 'CPU'; // 'CPU' | 'GPU'
   String _sortBy = 'newest'; // 'newest' | 'oldest' | 'price_asc' | 'price_desc'
   bool _isLoading = false;
+  bool _hasSearched = false;
 
   int get selectedIndex => _selectedIndex;
   List<PCBuild> get builds => _builds;
@@ -24,13 +24,27 @@ class AppState extends ChangeNotifier {
   String get catalogTab => _catalogTab;
   String get sortBy => _sortBy;
   bool get isLoading => _isLoading;
+  bool get hasSearched => _hasSearched;
 
-  String get currentBrandFilter =>
-      _catalogTab == 'CPU' ? _cpuBrandFilter : _gpuBrandFilter;
+  bool get hasActiveCatalogFilters {
+    final brand =
+        _catalogTab == 'CPU' ? _cpuBrandFilter : _gpuBrandFilter;
+    return _searchQuery.isNotEmpty ||
+        brand != 'All' ||
+        _seriesFilter != 'All';
+  }
 
-  List<String> get availableBrands => _catalogTab == 'CPU'
-      ? const ['All', 'Intel', 'AMD']
-      : const ['All', 'Nvidia', 'AMD', 'Intel'];
+  String get currentBrandFilter {
+    if (_catalogTab == 'CPU') return _cpuBrandFilter;
+    if (_catalogTab == 'GPU') return _gpuBrandFilter;
+    return _cpuBrandFilter; // synced with _gpuBrandFilter when tab == 'All'
+  }
+
+  List<String> get availableBrands {
+    if (_catalogTab == 'CPU') return const ['All', 'Intel', 'AMD'];
+    if (_catalogTab == 'GPU') return const ['All', 'Nvidia', 'AMD', 'Intel'];
+    return const ['All', 'Intel', 'AMD', 'Nvidia'];
+  }
 
   List<String> get availableSeries {
     final Iterable<String> all;
@@ -39,11 +53,20 @@ class AppState extends ChangeNotifier {
           .where((c) =>
               _cpuBrandFilter == 'All' || c.brand == _cpuBrandFilter)
           .map((c) => c.series);
-    } else {
+    } else if (_catalogTab == 'GPU') {
       all = mockGPUs
           .where((g) =>
               _gpuBrandFilter == 'All' || g.brand == _gpuBrandFilter)
           .map((g) => g.series);
+    } else {
+      final brand = _cpuBrandFilter;
+      final cpuSeries = mockCPUs
+          .where((c) => brand == 'All' || c.brand == brand)
+          .map((c) => c.series);
+      final gpuSeries = mockGPUs
+          .where((g) => brand == 'All' || g.brand == brand)
+          .map((g) => g.series);
+      all = {...cpuSeries, ...gpuSeries};
     }
     final unique = all.toSet().toList()..sort();
     return ['All', ...unique];
@@ -122,8 +145,13 @@ class AppState extends ChangeNotifier {
   void setBrandFilter(String brand) {
     if (_catalogTab == 'CPU') {
       setCpuBrandFilter(brand);
-    } else {
+    } else if (_catalogTab == 'GPU') {
       setGpuBrandFilter(brand);
+    } else {
+      _cpuBrandFilter = brand;
+      _gpuBrandFilter = brand;
+      _seriesFilter = 'All';
+      notifyListeners();
     }
   }
 
@@ -143,6 +171,26 @@ class AppState extends ChangeNotifier {
     _cpuBrandFilter = 'All';
     _gpuBrandFilter = 'All';
     _seriesFilter = 'All';
+    _hasSearched = false;
+    notifyListeners();
+  }
+
+  void runCatalogSearch() {
+    _hasSearched = true;
+    notifyListeners();
+  }
+
+  void resetCatalogSearch() {
+    _hasSearched = false;
+    notifyListeners();
+  }
+
+  void clearCatalogFilters() {
+    _searchQuery = '';
+    _cpuBrandFilter = 'All';
+    _gpuBrandFilter = 'All';
+    _seriesFilter = 'All';
+    _hasSearched = false;
     notifyListeners();
   }
 
@@ -150,11 +198,7 @@ class AppState extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getStringList('pc_builds') ?? [];
-      _builds = raw
-          .map((s) => PCBuild.fromMap(json.decode(s) as Map<String, dynamic>))
-          .toList();
+      _builds = await DatabaseHelper.instance.getAllBuilds();
     } catch (_) {
       _builds = [];
     }
@@ -163,26 +207,20 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> saveBuild(PCBuild build) async {
+    await DatabaseHelper.instance.upsertBuild(build);
     final existing = _builds.indexWhere((b) => b.id == build.id);
     if (existing >= 0) {
       _builds[existing] = build;
     } else {
       _builds.insert(0, build);
     }
-    await _persistBuilds();
     notifyListeners();
   }
 
   Future<void> deleteBuild(String id) async {
+    await DatabaseHelper.instance.deleteBuild(id);
     _builds.removeWhere((b) => b.id == id);
-    await _persistBuilds();
     notifyListeners();
-  }
-
-  Future<void> _persistBuilds() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = _builds.map((b) => json.encode(b.toMap())).toList();
-    await prefs.setStringList('pc_builds', raw);
   }
 
   CPU? getCpuById(String? id) {

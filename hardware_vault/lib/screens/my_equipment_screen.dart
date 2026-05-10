@@ -79,12 +79,15 @@ class _EquipHeader extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Mi Equipo',
+              const Text('My PC',
                   style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: AppTheme.textPrimary)),
-              Text('$buildCount configuración(es) guardada(s)',
+              Text(
+                  buildCount == 1
+                      ? '1 saved build'
+                      : '$buildCount saved builds',
                   style: const TextStyle(
                       fontSize: 12, color: AppTheme.textMuted)),
             ],
@@ -131,8 +134,8 @@ class _EmptyBuilds extends StatelessWidget {
   Widget build(BuildContext context) {
     return EmptyState(
       icon: Icons.computer_rounded,
-      title: 'Sin configuraciones',
-      subtitle: 'Agrega los componentes de tu PC\npara guardar tu build',
+      title: 'No builds yet',
+      subtitle: 'Add your PC components\nto save your first build',
       action: ElevatedButton.icon(
         onPressed: onAdd,
         style: ElevatedButton.styleFrom(
@@ -144,7 +147,7 @@ class _EmptyBuilds extends StatelessWidget {
               borderRadius: BorderRadius.circular(12)),
         ),
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Nueva Configuración',
+        label: const Text('New Build',
             style: TextStyle(fontWeight: FontWeight.w700)),
       ),
     );
@@ -235,7 +238,7 @@ class _BuildCard extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                               color: AppTheme.textPrimary)),
                       Text(
-                        'Actualizado ${_formatDate(pcBuild.updatedAt)}',
+                        'Updated ${_formatDate(pcBuild.updatedAt)}',
                         style: const TextStyle(
                             fontSize: 11, color: AppTheme.textMuted),
                       ),
@@ -266,7 +269,7 @@ class _BuildCard extends StatelessWidget {
                   child: _ComponentRow(
                     icon: Icons.developer_board_rounded,
                     label: 'CPU',
-                    value: cpu?.name ?? 'No asignado',
+                    value: cpu?.name ?? 'Not assigned',
                     hasValue: cpu != null,
                   ),
                 ),
@@ -276,7 +279,7 @@ class _BuildCard extends StatelessWidget {
             _ComponentRow(
               icon: Icons.videocam_rounded,
               label: 'GPU',
-              value: gpu?.name ?? 'No asignado',
+              value: gpu?.name ?? 'Not assigned',
               hasValue: gpu != null,
             ),
             const SizedBox(height: 8),
@@ -332,7 +335,7 @@ class _BuildCard extends StatelessWidget {
                       foregroundColor: Colors.redAccent,
                       padding: const EdgeInsets.symmetric(horizontal: 8)),
                   icon: const Icon(Icons.delete_outline_rounded, size: 14),
-                  label: const Text('Eliminar',
+                  label: const Text('Delete',
                       style: TextStyle(fontSize: 12)),
                 ),
               ],
@@ -348,21 +351,21 @@ class _BuildCard extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppTheme.surfaceCard,
-        title: const Text('¿Eliminar build?',
+        title: const Text('Delete build?',
             style: TextStyle(color: AppTheme.textPrimary)),
-        content: Text('Se eliminará "${pcBuild.name}" permanentemente.',
+        content: Text('"${pcBuild.name}" will be permanently deleted.',
             style: const TextStyle(color: AppTheme.textSecondary)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar',
+              child: const Text('Cancel',
                   style: TextStyle(color: AppTheme.textMuted))),
           TextButton(
               onPressed: () {
                 state.deleteBuild(pcBuild.id);
                 Navigator.pop(context);
               },
-              child: const Text('Eliminar',
+              child: const Text('Delete',
                   style: TextStyle(color: Colors.redAccent))),
         ],
       ),
@@ -372,9 +375,9 @@ class _BuildCard extends StatelessWidget {
   String _formatDate(DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inDays == 0) return 'hoy';
-    if (diff.inDays == 1) return 'ayer';
-    return 'hace ${diff.inDays} días';
+    if (diff.inDays == 0) return 'today';
+    if (diff.inDays == 1) return 'yesterday';
+    return '${diff.inDays} days ago';
   }
 }
 
@@ -444,7 +447,7 @@ class _BuildEditorState extends State<_BuildEditor> {
     super.initState();
     final e = widget.existing;
     _nameCtrl =
-        TextEditingController(text: e?.name ?? 'Mi PC ${DateTime.now().year}');
+        TextEditingController(text: e?.name ?? 'My PC ${DateTime.now().year}');
     _notesCtrl = TextEditingController(text: e?.notes ?? '');
     _selectedCpuId = e?.cpuId;
     _selectedGpuId = e?.gpuId;
@@ -466,7 +469,7 @@ class _BuildEditorState extends State<_BuildEditor> {
     final build = PCBuild(
       id: widget.existing?.id ??
           'build_${now.millisecondsSinceEpoch}',
-      name: _nameCtrl.text.trim().isEmpty ? 'Mi PC' : _nameCtrl.text.trim(),
+      name: _nameCtrl.text.trim().isEmpty ? 'My PC' : _nameCtrl.text.trim(),
       cpuId: _selectedCpuId,
       gpuId: _selectedGpuId,
       ramGB: _ramGB,
@@ -505,9 +508,7 @@ class _BuildEditorState extends State<_BuildEditor> {
             ),
             const SizedBox(height: 20),
             Text(
-                widget.existing == null
-                    ? 'Nueva Configuración'
-                    : 'Editar Configuración',
+                widget.existing == null ? 'New Build' : 'Edit Build',
                 style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -515,23 +516,23 @@ class _BuildEditorState extends State<_BuildEditor> {
             const SizedBox(height: 20),
 
             // Name
-            _FieldLabel('Nombre del build'),
+            _FieldLabel('Build name'),
             TextField(
               controller: _nameCtrl,
               style: const TextStyle(color: AppTheme.textPrimary),
               decoration: const InputDecoration(
-                  hintText: 'Ej: Gaming Rig 2025'),
+                  hintText: 'e.g. Gaming Rig 2025'),
             ),
             const SizedBox(height: 16),
 
             // CPU Picker
-            _FieldLabel('Procesador (CPU)'),
+            _FieldLabel('Processor (CPU)'),
             _Dropdown<String?>(
               value: _selectedCpuId,
               items: [
                 const DropdownMenuItem(
                     value: null,
-                    child: Text('Sin asignar',
+                    child: Text('Not assigned',
                         style: TextStyle(color: AppTheme.textMuted))),
                 ...mockCPUs.map((c) => DropdownMenuItem(
                       value: c.id,
@@ -547,13 +548,13 @@ class _BuildEditorState extends State<_BuildEditor> {
             const SizedBox(height: 16),
 
             // GPU Picker
-            _FieldLabel('Tarjeta Gráfica (GPU)'),
+            _FieldLabel('Graphics Card (GPU)'),
             _Dropdown<String?>(
               value: _selectedGpuId,
               items: [
                 const DropdownMenuItem(
                     value: null,
-                    child: Text('Sin asignar',
+                    child: Text('Not assigned',
                         style: TextStyle(color: AppTheme.textMuted))),
                 ...mockGPUs.map((g) => DropdownMenuItem(
                       value: g.id,
@@ -596,7 +597,7 @@ class _BuildEditorState extends State<_BuildEditor> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _FieldLabel('Tipo RAM'),
+                      _FieldLabel('RAM Type'),
                       _Dropdown<String>(
                         value: _ramType,
                         items: ['DDR4', 'DDR5']
@@ -623,7 +624,7 @@ class _BuildEditorState extends State<_BuildEditor> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _FieldLabel('Almacenamiento'),
+                      _FieldLabel('Storage'),
                       _Dropdown<int>(
                         value: _storageGB,
                         items: [256, 512, 1000, 2000, 4000]
@@ -648,7 +649,7 @@ class _BuildEditorState extends State<_BuildEditor> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _FieldLabel('Tipo Storage'),
+                      _FieldLabel('Storage Type'),
                       _Dropdown<String>(
                         value: _storageType,
                         items: ['NVMe SSD', 'SATA SSD', 'HDD']
@@ -671,14 +672,14 @@ class _BuildEditorState extends State<_BuildEditor> {
             const SizedBox(height: 16),
 
             // Notes
-            _FieldLabel('Notas (opcional)'),
+            _FieldLabel('Notes (optional)'),
             TextField(
               controller: _notesCtrl,
               style: const TextStyle(
                   color: AppTheme.textPrimary, fontSize: 13),
               maxLines: 3,
               decoration: const InputDecoration(
-                  hintText: 'Ej: Build para streaming y gaming 4K...'),
+                  hintText: 'e.g. Build for streaming and 4K gaming...'),
             ),
             const SizedBox(height: 24),
 
@@ -696,8 +697,8 @@ class _BuildEditorState extends State<_BuildEditor> {
                 ),
                 child: Text(
                   widget.existing == null
-                      ? 'Guardar Configuración'
-                      : 'Actualizar Configuración',
+                      ? 'Save Build'
+                      : 'Update Build',
                   style: const TextStyle(
                       fontWeight: FontWeight.w800, fontSize: 15),
                 ),

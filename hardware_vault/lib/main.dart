@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:timeago/timeago.dart' as timeago;
 import 'providers/app_state.dart';
 import 'theme/app_theme.dart';
 import 'screens/catalog_screen.dart';
@@ -11,8 +10,6 @@ import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Register Spanish locale for timeago
-  timeago.setLocaleMessages('es', timeago.EsMessages());
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -100,21 +97,21 @@ class _BottomNav extends StatelessWidget {
                 index: 0,
                 selectedIndex: selectedIndex,
                 icon: Icons.memory_rounded,
-                label: 'Catálogo',
+                label: 'Catalog',
                 onTap: onTap,
               ),
               _NavItem(
                 index: 1,
                 selectedIndex: selectedIndex,
                 icon: Icons.newspaper_rounded,
-                label: 'Noticias',
+                label: 'News',
                 onTap: onTap,
               ),
               _NavItem(
                 index: 2,
                 selectedIndex: selectedIndex,
                 icon: Icons.computer_rounded,
-                label: 'Mi Equipo',
+                label: 'My PC',
                 onTap: onTap,
               ),
             ],

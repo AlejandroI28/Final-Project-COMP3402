@@ -3,6 +3,8 @@ import '../models/models.dart';
 import '../theme/app_theme.dart';
 
 String? gpuSeriesImage(GPU gpu) {
+  if (gpu.brand == 'AMD') return 'assets/images/radeonrx.jpg';
+  if (gpu.brand == 'Intel') return 'assets/images/intel arc.jpg';
   if (gpu.brand != 'Nvidia') return null;
   switch (gpu.series) {
     case 'RTX 5000':
@@ -11,6 +13,19 @@ String? gpuSeriesImage(GPU gpu) {
       return 'assets/images/rtx_4000.jpg';
     case 'RTX 3000':
       return 'assets/images/rtx_3000.png';
+  }
+  return null;
+}
+
+String? cpuSeriesImage(CPU cpu) {
+  if (cpu.brand == 'Intel') {
+    if (cpu.series.contains('Ultra')) {
+      return 'assets/images/intel ultra.png';
+    }
+    return 'assets/images/intel core.png';
+  }
+  if (cpu.brand == 'AMD') {
+    return 'assets/images/ryzen.png';
   }
   return null;
 }

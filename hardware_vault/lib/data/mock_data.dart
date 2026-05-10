@@ -717,7 +717,8 @@ final List<NewsArticle> mockNews = [
         'NVIDIA\'s flagship Blackwell GPU delivers a 30% generational leap over the RTX 4090 in rasterization and obliterates frame generation targets with its 5th-gen Tensor Cores. At \$1,999 MSRP, availability remains the real challenge.',
     source: 'TechPowerUp',
     category: 'GPU',
-    imageUrl: 'https://i.imgur.com/placeholder.png',
+    imageUrl:
+        'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&q=80&auto=format&fit=crop',
     publishedAt: DateTime.now().subtract(const Duration(hours: 3)),
     isBreaking: true,
   ),
@@ -728,7 +729,8 @@ final List<NewsArticle> mockNews = [
         'AMD\'s RDNA 4 architecture surprises the market with exceptional ray-tracing performance and competitive raster scores against NVIDIA\'s RTX 4080. The RX 9070 XT positions itself as the go-to card for 1440p and 4K gaming.',
     source: 'AnandTech',
     category: 'GPU',
-    imageUrl: 'https://i.imgur.com/placeholder.png',
+    imageUrl:
+        'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?w=800&q=80&auto=format&fit=crop',
     publishedAt: DateTime.now().subtract(const Duration(hours: 8)),
     isBreaking: false,
   ),
@@ -739,7 +741,8 @@ final List<NewsArticle> mockNews = [
         'The Core Ultra 200 series brings major IPC improvements for multi-threaded workloads and dramatically lowers power consumption, but gaming performance lags behind AMD\'s Ryzen 9000 series in several titles.',
     source: 'Digital Foundry',
     category: 'CPU',
-    imageUrl: 'https://i.imgur.com/placeholder.png',
+    imageUrl:
+        'https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=800&q=80&auto=format&fit=crop',
     publishedAt: DateTime.now().subtract(const Duration(hours: 14)),
     isBreaking: false,
   ),
@@ -750,7 +753,8 @@ final List<NewsArticle> mockNews = [
         'From next-gen DDR6 memory controllers to PCIe 6.0 motherboard previews and the debut of AMD\'s Zen 6 architecture teasers, Computex 2025 packed more surprises than any show in recent memory.',
     source: 'Tom\'s Hardware',
     category: 'Event',
-    imageUrl: 'https://i.imgur.com/placeholder.png',
+    imageUrl:
+        'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80&auto=format&fit=crop',
     publishedAt: DateTime.now().subtract(const Duration(days: 1)),
     isBreaking: false,
   ),
@@ -761,7 +765,8 @@ final List<NewsArticle> mockNews = [
         'Granite Ridge\'s flagship pushes TSMC N4 to its limits with 16 Zen 5 cores, topping every Cinebench and Blender record while sipping just 170W. A must-buy for creators who can\'t wait for X3D variants.',
     source: 'Linus Tech Tips',
     category: 'CPU',
-    imageUrl: 'https://i.imgur.com/placeholder.png',
+    imageUrl:
+        'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80&auto=format&fit=crop',
     publishedAt: DateTime.now().subtract(const Duration(days: 2)),
     isBreaking: false,
   ),
@@ -772,7 +777,8 @@ final List<NewsArticle> mockNews = [
         'Battlemage overcomes Alchemist\'s driver growing pains with rock-solid stability and surprisingly competitive performance. The B580\'s 12GB VRAM buffer proves decisive against AMD\'s RX 7600 XT.',
     source: 'GamersNexus',
     category: 'GPU',
-    imageUrl: 'https://i.imgur.com/placeholder.png',
+    imageUrl:
+        'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?w=800&q=80&auto=format&fit=crop',
     publishedAt: DateTime.now().subtract(const Duration(days: 3)),
     isBreaking: false,
   ),
@@ -783,7 +789,8 @@ final List<NewsArticle> mockNews = [
         'JEDEC finalizes DDR6 with transfer rates starting at 8800 MT/s, scalable to over 17600 MT/s with XMP. Both AMD\'s next-gen AM6 platform and Intel\'s Panther Lake mobile lineup are confirmed DDR6 adopters.',
     source: 'AnandTech',
     category: 'Memory',
-    imageUrl: 'https://i.imgur.com/placeholder.png',
+    imageUrl:
+        'https://images.unsplash.com/photo-1562976540-1502c2145186?w=800&q=80&auto=format&fit=crop',
     publishedAt: DateTime.now().subtract(const Duration(days: 4)),
     isBreaking: false,
   ),
@@ -794,7 +801,8 @@ final List<NewsArticle> mockNews = [
         '3D V-Cache continues to dominate CPU-bound gaming scenarios. Despite Arrow Lake and Granite Ridge launches, AMD\'s mid-range 3D chip remains king in titles that scale with L3 cache bandwidth.',
     source: 'Hardware Unboxed',
     category: 'CPU',
-    imageUrl: 'https://i.imgur.com/placeholder.png',
+    imageUrl:
+        'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&q=80&auto=format&fit=crop',
     publishedAt: DateTime.now().subtract(const Duration(days: 5)),
     isBreaking: false,
   ),

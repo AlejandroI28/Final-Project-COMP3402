@@ -45,7 +45,7 @@ class _CatalogHeader extends StatelessWidget {
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Catálogo',
+              Text('Catalog',
                   style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
@@ -61,31 +61,117 @@ class _CatalogHeader extends StatelessWidget {
   }
 }
 
-class _SearchBar extends StatelessWidget {
+class _SearchBar extends StatefulWidget {
   const _SearchBar();
+
+  @override
+  State<_SearchBar> createState() => _SearchBarState();
+}
+
+class _SearchBarState extends State<_SearchBar> {
+  final _controller = TextEditingController();
+  late final AppState _state;
+
+  @override
+  void initState() {
+    super.initState();
+    _state = context.read<AppState>();
+    _state.addListener(_syncFromState);
+  }
+
+  void _syncFromState() {
+    if (_controller.text != _state.searchQuery) {
+      _controller.text = _state.searchQuery;
+      _controller.selection =
+          TextSelection.collapsed(offset: _controller.text.length);
+    }
+  }
+
+  @override
+  void dispose() {
+    _state.removeListener(_syncFromState);
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              onChanged: (v) => context.read<AppState>().setSearch(v),
-              style:
-                  const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-              decoration: const InputDecoration(
-                hintText: 'Buscar procesador o tarjeta gráfica...',
-                prefixIcon: Icon(Icons.search_rounded, size: 20),
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Consumer<AppState>(
+        builder: (_, state, __) {
+          final showClear = state.hasActiveCatalogFilters;
+          return Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  onChanged: state.setSearch,
+                  onSubmitted: (_) => state.runCatalogSearch(),
+                  style: const TextStyle(
+                      color: AppTheme.textPrimary, fontSize: 14),
+                  decoration: const InputDecoration(
+                    hintText: 'Search processor or graphics card...',
+                    prefixIcon: Icon(Icons.search_rounded, size: 20),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          const _SortButton(),
-        ],
+              if (showClear) ...[
+                const SizedBox(width: 8),
+                const _ClearButton(),
+              ],
+              const SizedBox(width: 8),
+              const _SearchButton(),
+              const SizedBox(width: 8),
+              const _SortButton(),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SearchButton extends StatelessWidget {
+  const _SearchButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.read<AppState>().runCatalogSearch(),
+      child: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          color: AppTheme.primary,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(Icons.search_rounded,
+            color: Colors.black, size: 22),
+      ),
+    );
+  }
+}
+
+class _ClearButton extends StatelessWidget {
+  const _ClearButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.read<AppState>().clearCatalogFilters(),
+      child: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceCard,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppTheme.border),
+        ),
+        child: const Icon(Icons.close_rounded,
+            color: AppTheme.textSecondary, size: 20),
       ),
     );
   }
@@ -95,10 +181,10 @@ class _SortButton extends StatelessWidget {
   const _SortButton();
 
   static const _options = <String, String>{
-    'newest': 'Más nuevo',
-    'oldest': 'Más viejo',
-    'price_asc': 'Más barato',
-    'price_desc': 'Más caro',
+    'newest': 'Newest',
+    'oldest': 'Oldest',
+    'price_asc': 'Cheapest',
+    'price_desc': 'Most expensive',
   };
 
   @override
@@ -166,21 +252,21 @@ class _FilterBar extends StatelessWidget {
             children: [
               Expanded(
                   child: _FilterChip(
-                      label: 'Tipo',
+                      label: 'Type',
                       value: state.catalogTab,
-                      options: const ['CPU', 'GPU'],
+                      options: const ['All', 'CPU', 'GPU'],
                       onSelect: state.setCatalogTab)),
               const SizedBox(width: 8),
               Expanded(
                   child: _FilterChip(
-                      label: 'Marca',
+                      label: 'Brand',
                       value: state.currentBrandFilter,
                       options: state.availableBrands,
                       onSelect: state.setBrandFilter)),
               const SizedBox(width: 8),
               Expanded(
                   child: _FilterChip(
-                      label: 'Serie',
+                      label: 'Series',
                       value: state.seriesFilter,
                       options: state.availableSeries,
                       onSelect: state.setSeriesFilter)),
@@ -274,11 +360,24 @@ class _CatalogBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (_, state, __) {
+        if (!state.hasSearched) {
+          return const EmptyState(
+            icon: Icons.search_rounded,
+            title: 'Press search to begin',
+            subtitle:
+                'Type a query or pick filters,\nthen tap the search button',
+          );
+        }
         if (state.catalogTab == 'CPU') {
           return _CPUList(cpus: state.filteredCPUs, state: state);
-        } else {
+        }
+        if (state.catalogTab == 'GPU') {
           return _GPUList(gpus: state.filteredGPUs, state: state);
         }
+        return _AllList(
+            cpus: state.filteredCPUs,
+            gpus: state.filteredGPUs,
+            state: state);
       },
     );
   }
@@ -368,6 +467,101 @@ List<Widget> _buildBrandWithSeries<T>({
   return slivers;
 }
 
+// ─── ALL LIST (CPU + GPU combined) ───────────────────────────────────────────
+class _AllList extends StatelessWidget {
+  final List<CPU> cpus;
+  final List<GPU> gpus;
+  final AppState state;
+
+  const _AllList(
+      {required this.cpus, required this.gpus, required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final isCustomSort = state.sortBy != 'newest';
+
+    if (cpus.isEmpty && gpus.isEmpty) {
+      return const CustomScrollView(slivers: [
+        SliverFillRemaining(
+          child: EmptyState(
+            icon: Icons.search_off_rounded,
+            title: 'No results',
+            subtitle: 'Try a different search term',
+          ),
+        ),
+      ]);
+    }
+
+    final slivers = <Widget>[];
+
+    if (isCustomSort) {
+      if (cpus.isNotEmpty) {
+        slivers.add(_buildBrandHeader('CPUs', AppTheme.primary));
+        slivers.add(SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (_, i) => _CPUCard(cpu: cpus[i]),
+            childCount: cpus.length,
+          ),
+        ));
+      }
+      if (gpus.isNotEmpty) {
+        slivers.add(_buildBrandHeader('GPUs', AppTheme.primary));
+        slivers.add(SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (_, i) => _GPUCard(gpu: gpus[i]),
+            childCount: gpus.length,
+          ),
+        ));
+      }
+    } else {
+      final intelCPUs = cpus.where((c) => c.brand == 'Intel').toList();
+      final amdCPUs = cpus.where((c) => c.brand == 'AMD').toList();
+      final nvidiaGPUs = gpus.where((g) => g.brand == 'Nvidia').toList();
+      final amdGPUs = gpus.where((g) => g.brand == 'AMD').toList();
+      final intelGPUs = gpus.where((g) => g.brand == 'Intel').toList();
+
+      slivers.addAll(_buildBrandWithSeries<CPU>(
+        items: intelCPUs,
+        brand: 'Intel CPUs',
+        brandColor: AppTheme.intelBlue,
+        getSeries: (c) => c.series,
+        buildCard: (c) => _CPUCard(cpu: c),
+      ));
+      slivers.addAll(_buildBrandWithSeries<CPU>(
+        items: amdCPUs,
+        brand: 'AMD CPUs',
+        brandColor: AppTheme.amdRed,
+        getSeries: (c) => c.series,
+        buildCard: (c) => _CPUCard(cpu: c),
+      ));
+      slivers.addAll(_buildBrandWithSeries<GPU>(
+        items: nvidiaGPUs,
+        brand: 'Nvidia GPUs',
+        brandColor: AppTheme.nvidiaGreen,
+        getSeries: (g) => g.series,
+        buildCard: (g) => _GPUCard(gpu: g),
+      ));
+      slivers.addAll(_buildBrandWithSeries<GPU>(
+        items: amdGPUs,
+        brand: 'AMD GPUs',
+        brandColor: AppTheme.amdRed,
+        getSeries: (g) => g.series,
+        buildCard: (g) => _GPUCard(gpu: g),
+      ));
+      slivers.addAll(_buildBrandWithSeries<GPU>(
+        items: intelGPUs,
+        brand: 'Intel GPUs',
+        brandColor: AppTheme.intelBlue,
+        getSeries: (g) => g.series,
+        buildCard: (g) => _GPUCard(gpu: g),
+      ));
+    }
+
+    slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 100)));
+    return CustomScrollView(slivers: slivers);
+  }
+}
+
 // ─── CPU LIST ─────────────────────────────────────────────────────────────────
 class _CPUList extends StatelessWidget {
   final List<CPU> cpus;
@@ -388,8 +582,8 @@ class _CPUList extends StatelessWidget {
           const SliverFillRemaining(
             child: EmptyState(
               icon: Icons.search_off_rounded,
-              title: 'Sin resultados',
-              subtitle: 'Intenta con otro término de búsqueda',
+              title: 'No results',
+              subtitle: 'Try a different search term',
             ),
           )
         else if (isCustomSort) ...[
@@ -448,7 +642,6 @@ class _CPUCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Icon placeholder
             Container(
               width: 52,
               height: 52,
@@ -457,8 +650,18 @@ class _CPUCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: AppTheme.border),
               ),
-              child: const Icon(Icons.developer_board_rounded,
-                  color: AppTheme.primary, size: 26),
+              clipBehavior: Clip.antiAlias,
+              child: cpuSeriesImage(cpu) != null
+                  ? Image.asset(
+                      cpuSeriesImage(cpu)!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                          Icons.developer_board_rounded,
+                          color: AppTheme.primary,
+                          size: 26),
+                    )
+                  : const Icon(Icons.developer_board_rounded,
+                      color: AppTheme.primary, size: 26),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -550,8 +753,8 @@ class _GPUList extends StatelessWidget {
           const SliverFillRemaining(
             child: EmptyState(
               icon: Icons.search_off_rounded,
-              title: 'Sin resultados',
-              subtitle: 'Intenta con otro término de búsqueda',
+              title: 'No results',
+              subtitle: 'Try a different search term',
             ),
           )
         else if (isCustomSort) ...[

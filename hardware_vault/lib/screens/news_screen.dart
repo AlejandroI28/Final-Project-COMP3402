@@ -12,18 +12,32 @@ class NewsScreen extends StatefulWidget {
 }
 
 class _NewsScreenState extends State<NewsScreen> {
-  String _filter = 'All';
-  final _categories = ['All', 'GPU', 'CPU', 'Memory', 'Event'];
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   List<NewsArticle> get _filtered {
-    if (_filter == 'All') return mockNews;
-    return mockNews.where((n) => n.category == _filter).toList();
+    if (_query.isEmpty) return mockNews;
+    final q = _query.toLowerCase();
+    return mockNews
+        .where((n) =>
+            n.title.toLowerCase().contains(q) ||
+            n.summary.toLowerCase().contains(q) ||
+            n.source.toLowerCase().contains(q) ||
+            n.category.toLowerCase().contains(q))
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final featured = _filtered.isNotEmpty ? _filtered.first : null;
-    final rest = _filtered.length > 1 ? _filtered.sublist(1) : <NewsArticle>[];
+    final results = _filtered;
+    final featured = results.isNotEmpty ? results.first : null;
+    final rest = results.length > 1 ? results.sublist(1) : <NewsArticle>[];
 
     return CustomScrollView(
       slivers: [
@@ -48,12 +62,12 @@ class _NewsScreenState extends State<NewsScreen> {
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Noticias',
+                    Text('News',
                         style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: AppTheme.textPrimary)),
-                    Text('Hardware & Tecnología',
+                    Text('Hardware & Technology',
                         style: TextStyle(
                             fontSize: 12, color: AppTheme.textMuted)),
                   ],
@@ -62,40 +76,31 @@ class _NewsScreenState extends State<NewsScreen> {
             ),
           ),
         ),
-        // ── Category Filter ────────────────────────────────────────────────
+        // ── Search Bar ─────────────────────────────────────────────────────
         SliverToBoxAdapter(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: _categories.map((cat) {
-                final sel = cat == _filter;
-                return GestureDetector(
-                  onTap: () => setState(() => _filter = cat),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: sel
-                          ? AppTheme.primary.withOpacity(0.15)
-                          : AppTheme.surfaceCard,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color:
-                              sel ? AppTheme.primary : AppTheme.border),
-                    ),
-                    child: Text(cat,
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: sel
-                                ? AppTheme.primary
-                                : AppTheme.textSecondary)),
-                  ),
-                );
-              }).toList(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _query = v),
+              style:
+                  const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Search news, source, or category...',
+                prefixIcon:
+                    const Icon(Icons.search_rounded, size: 20),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() => _query = '');
+                        },
+                      ),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
+              ),
             ),
           ),
         ),
@@ -104,13 +109,17 @@ class _NewsScreenState extends State<NewsScreen> {
           SliverToBoxAdapter(
             child: _FeaturedCard(article: featured),
           ),
-        // ── Rest ───────────────────────────────────────────────────────────
-        if (rest.isEmpty && featured == null)
+        // ── Empty state ────────────────────────────────────────────────────
+        if (results.isEmpty)
           const SliverFillRemaining(
-            child: Center(
-              child: Text('No hay noticias en esta categoría',
-                  style:
-                      TextStyle(color: AppTheme.textMuted, fontSize: 14)),
+            hasScrollBody: false,
+            child: Padding(
+              padding: EdgeInsets.only(top: 40),
+              child: Center(
+                child: Text('No news matches your search',
+                    style:
+                        TextStyle(color: AppTheme.textMuted, fontSize: 14)),
+              ),
             ),
           ),
         SliverList(
@@ -186,23 +195,39 @@ class _FeaturedCard extends StatelessWidget {
                 _CategoryChip(category: article.category),
                 const Spacer(),
                 Text(
-                  timeago.format(article.publishedAt, locale: 'es'),
+                  timeago.format(article.publishedAt),
                   style: const TextStyle(
                       fontSize: 10, color: AppTheme.textMuted),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            Container(
-              height: 140,
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceElevated,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.border),
-              ),
-              child: const Center(
-                child: Icon(Icons.newspaper_rounded,
-                    size: 50, color: AppTheme.primary),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                height: 160,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceElevated,
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: Image.network(
+                  article.imageUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (_, child, progress) {
+                    if (progress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primary,
+                        strokeWidth: 2,
+                      ),
+                    );
+                  },
+                  errorBuilder: (_, __, ___) => const Center(
+                    child: Icon(Icons.newspaper_rounded,
+                        size: 50, color: AppTheme.primary),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 14),
@@ -259,16 +284,37 @@ class _NewsCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceElevated,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.border),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceElevated,
+                border: Border.all(color: AppTheme.border),
+              ),
+              child: Image.network(
+                article.imageUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return const Center(
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primary,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (_, __, ___) => const Center(
+                  child: Icon(Icons.article_rounded,
+                      color: AppTheme.primary, size: 32),
+                ),
+              ),
             ),
-            child: const Icon(Icons.article_rounded,
-                color: AppTheme.primary, size: 32),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -280,7 +326,7 @@ class _NewsCard extends StatelessWidget {
                     _CategoryChip(category: article.category),
                     const Spacer(),
                     Text(
-                      timeago.format(article.publishedAt, locale: 'es'),
+                      timeago.format(article.publishedAt),
                       style: const TextStyle(
                           fontSize: 10, color: AppTheme.textMuted),
                     ),
