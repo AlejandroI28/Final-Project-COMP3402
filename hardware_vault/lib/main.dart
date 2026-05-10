@@ -7,6 +7,7 @@ import 'theme/app_theme.dart';
 import 'screens/catalog_screen.dart';
 import 'screens/news_screen.dart';
 import 'screens/my_equipment_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +33,7 @@ class HardwareVaultApp extends StatelessWidget {
         title: 'Hardware Vault',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
-        home: const MainShell(),
+        home: const SplashScreen(),
       ),
     );
   }

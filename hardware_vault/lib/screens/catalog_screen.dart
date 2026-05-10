@@ -68,17 +68,87 @@ class _SearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: TextField(
-        onChanged: (v) => context.read<AppState>().setSearch(v),
-        style:
-            const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-        decoration: const InputDecoration(
-          hintText: 'Buscar procesador o tarjeta gráfica...',
-          prefixIcon: Icon(Icons.search_rounded, size: 20),
-          contentPadding:
-              EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              onChanged: (v) => context.read<AppState>().setSearch(v),
+              style:
+                  const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+              decoration: const InputDecoration(
+                hintText: 'Buscar procesador o tarjeta gráfica...',
+                prefixIcon: Icon(Icons.search_rounded, size: 20),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const _SortButton(),
+        ],
       ),
+    );
+  }
+}
+
+class _SortButton extends StatelessWidget {
+  const _SortButton();
+
+  static const _options = <String, String>{
+    'newest': 'Más nuevo',
+    'oldest': 'Más viejo',
+    'price_asc': 'Más barato',
+    'price_desc': 'Más caro',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AppState>(
+      builder: (_, state, __) {
+        final isActive = state.sortBy != 'newest';
+        return PopupMenuButton<String>(
+          onSelected: state.setSortBy,
+          color: AppTheme.surfaceCard,
+          offset: const Offset(0, 50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: const BorderSide(color: AppTheme.border),
+          ),
+          itemBuilder: (_) => _options.entries
+              .map((e) => PopupMenuItem<String>(
+                    value: e.key,
+                    height: 38,
+                    child: Text(
+                      e.value,
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: e.key == state.sortBy
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: e.key == state.sortBy
+                              ? AppTheme.primary
+                              : AppTheme.textPrimary),
+                    ),
+                  ))
+              .toList(),
+          child: Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: isActive
+                  ? AppTheme.primary.withOpacity(0.15)
+                  : AppTheme.surfaceCard,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                  color: isActive ? AppTheme.primary : AppTheme.border),
+            ),
+            child: Icon(Icons.sort_rounded,
+                color:
+                    isActive ? AppTheme.primary : AppTheme.textSecondary,
+                size: 20),
+          ),
+        );
+      },
     );
   }
 }
@@ -310,6 +380,8 @@ class _CPUList extends StatelessWidget {
     final intelCPUs = cpus.where((c) => c.brand == 'Intel').toList();
     final amdCPUs = cpus.where((c) => c.brand == 'AMD').toList();
 
+    final isCustomSort = state.sortBy != 'newest';
+
     return CustomScrollView(
       slivers: [
         if (cpus.isEmpty)
@@ -319,23 +391,35 @@ class _CPUList extends StatelessWidget {
               title: 'Sin resultados',
               subtitle: 'Intenta con otro término de búsqueda',
             ),
+          )
+        else if (isCustomSort) ...[
+          SliverPadding(
+            padding: const EdgeInsets.only(top: 6),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (_, i) => _CPUCard(cpu: cpus[i]),
+                childCount: cpus.length,
+              ),
+            ),
           ),
-        if (state.cpuBrandFilter != 'AMD')
-          ..._buildBrandWithSeries<CPU>(
-            items: intelCPUs,
-            brand: 'Intel',
-            brandColor: AppTheme.intelBlue,
-            getSeries: (c) => c.series,
-            buildCard: (c) => _CPUCard(cpu: c),
-          ),
-        if (state.cpuBrandFilter != 'Intel')
-          ..._buildBrandWithSeries<CPU>(
-            items: amdCPUs,
-            brand: 'AMD',
-            brandColor: AppTheme.amdRed,
-            getSeries: (c) => c.series,
-            buildCard: (c) => _CPUCard(cpu: c),
-          ),
+        ] else ...[
+          if (state.cpuBrandFilter != 'AMD')
+            ..._buildBrandWithSeries<CPU>(
+              items: intelCPUs,
+              brand: 'Intel',
+              brandColor: AppTheme.intelBlue,
+              getSeries: (c) => c.series,
+              buildCard: (c) => _CPUCard(cpu: c),
+            ),
+          if (state.cpuBrandFilter != 'Intel')
+            ..._buildBrandWithSeries<CPU>(
+              items: amdCPUs,
+              brand: 'AMD',
+              brandColor: AppTheme.amdRed,
+              getSeries: (c) => c.series,
+              buildCard: (c) => _CPUCard(cpu: c),
+            ),
+        ],
         const SliverToBoxAdapter(child: SizedBox(height: 100)),
       ],
     );
@@ -458,6 +542,8 @@ class _GPUList extends StatelessWidget {
     final amdGPUs = gpus.where((g) => g.brand == 'AMD').toList();
     final intelGPUs = gpus.where((g) => g.brand == 'Intel').toList();
 
+    final isCustomSort = state.sortBy != 'newest';
+
     return CustomScrollView(
       slivers: [
         if (gpus.isEmpty)
@@ -467,31 +553,45 @@ class _GPUList extends StatelessWidget {
               title: 'Sin resultados',
               subtitle: 'Intenta con otro término de búsqueda',
             ),
+          )
+        else if (isCustomSort) ...[
+          SliverPadding(
+            padding: const EdgeInsets.only(top: 6),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (_, i) => _GPUCard(gpu: gpus[i]),
+                childCount: gpus.length,
+              ),
+            ),
           ),
-        if (state.gpuBrandFilter == 'All' || state.gpuBrandFilter == 'Nvidia')
-          ..._buildBrandWithSeries<GPU>(
-            items: nvidiaGPUs,
-            brand: 'Nvidia',
-            brandColor: AppTheme.nvidiaGreen,
-            getSeries: (g) => g.series,
-            buildCard: (g) => _GPUCard(gpu: g),
-          ),
-        if (state.gpuBrandFilter == 'All' || state.gpuBrandFilter == 'AMD')
-          ..._buildBrandWithSeries<GPU>(
-            items: amdGPUs,
-            brand: 'AMD',
-            brandColor: AppTheme.amdRed,
-            getSeries: (g) => g.series,
-            buildCard: (g) => _GPUCard(gpu: g),
-          ),
-        if (state.gpuBrandFilter == 'All' || state.gpuBrandFilter == 'Intel')
-          ..._buildBrandWithSeries<GPU>(
-            items: intelGPUs,
-            brand: 'Intel',
-            brandColor: AppTheme.intelBlue,
-            getSeries: (g) => g.series,
-            buildCard: (g) => _GPUCard(gpu: g),
-          ),
+        ] else ...[
+          if (state.gpuBrandFilter == 'All' ||
+              state.gpuBrandFilter == 'Nvidia')
+            ..._buildBrandWithSeries<GPU>(
+              items: nvidiaGPUs,
+              brand: 'Nvidia',
+              brandColor: AppTheme.nvidiaGreen,
+              getSeries: (g) => g.series,
+              buildCard: (g) => _GPUCard(gpu: g),
+            ),
+          if (state.gpuBrandFilter == 'All' || state.gpuBrandFilter == 'AMD')
+            ..._buildBrandWithSeries<GPU>(
+              items: amdGPUs,
+              brand: 'AMD',
+              brandColor: AppTheme.amdRed,
+              getSeries: (g) => g.series,
+              buildCard: (g) => _GPUCard(gpu: g),
+            ),
+          if (state.gpuBrandFilter == 'All' ||
+              state.gpuBrandFilter == 'Intel')
+            ..._buildBrandWithSeries<GPU>(
+              items: intelGPUs,
+              brand: 'Intel',
+              brandColor: AppTheme.intelBlue,
+              getSeries: (g) => g.series,
+              buildCard: (g) => _GPUCard(gpu: g),
+            ),
+        ],
         const SliverToBoxAdapter(child: SizedBox(height: 100)),
       ],
     );

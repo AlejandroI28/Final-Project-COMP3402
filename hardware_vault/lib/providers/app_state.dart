@@ -12,6 +12,7 @@ class AppState extends ChangeNotifier {
   String _gpuBrandFilter = 'All';
   String _seriesFilter = 'All';
   String _catalogTab = 'CPU'; // 'CPU' | 'GPU'
+  String _sortBy = 'newest'; // 'newest' | 'oldest' | 'price_asc' | 'price_desc'
   bool _isLoading = false;
 
   int get selectedIndex => _selectedIndex;
@@ -21,6 +22,7 @@ class AppState extends ChangeNotifier {
   String get gpuBrandFilter => _gpuBrandFilter;
   String get seriesFilter => _seriesFilter;
   String get catalogTab => _catalogTab;
+  String get sortBy => _sortBy;
   bool get isLoading => _isLoading;
 
   String get currentBrandFilter =>
@@ -48,7 +50,7 @@ class AppState extends ChangeNotifier {
   }
 
   List<CPU> get filteredCPUs {
-    return mockCPUs.where((cpu) {
+    final list = mockCPUs.where((cpu) {
       final matchBrand =
           _cpuBrandFilter == 'All' || cpu.brand == _cpuBrandFilter;
       final matchSeries =
@@ -58,10 +60,21 @@ class AppState extends ChangeNotifier {
           cpu.series.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchBrand && matchSeries && matchSearch;
     }).toList();
+    switch (_sortBy) {
+      case 'price_asc':
+        list.sort((a, b) => a.price.compareTo(b.price));
+        break;
+      case 'price_desc':
+        list.sort((a, b) => b.price.compareTo(a.price));
+        break;
+      case 'oldest':
+        return list.reversed.toList();
+    }
+    return list;
   }
 
   List<GPU> get filteredGPUs {
-    return mockGPUs.where((gpu) {
+    final list = mockGPUs.where((gpu) {
       final matchBrand =
           _gpuBrandFilter == 'All' || gpu.brand == _gpuBrandFilter;
       final matchSeries =
@@ -71,6 +84,17 @@ class AppState extends ChangeNotifier {
           gpu.series.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchBrand && matchSeries && matchSearch;
     }).toList();
+    switch (_sortBy) {
+      case 'price_asc':
+        list.sort((a, b) => a.price.compareTo(b.price));
+        break;
+      case 'price_desc':
+        list.sort((a, b) => b.price.compareTo(a.price));
+        break;
+      case 'oldest':
+        return list.reversed.toList();
+    }
+    return list;
   }
 
   void setSelectedIndex(int index) {
@@ -105,6 +129,11 @@ class AppState extends ChangeNotifier {
 
   void setSeriesFilter(String series) {
     _seriesFilter = series;
+    notifyListeners();
+  }
+
+  void setSortBy(String sort) {
+    _sortBy = sort;
     notifyListeners();
   }
 
