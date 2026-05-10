@@ -10,7 +10,7 @@ class AppState extends ChangeNotifier {
   String _cpuBrandFilter = 'All';
   String _gpuBrandFilter = 'All';
   String _seriesFilter = 'All';
-  String _catalogTab = 'CPU'; // 'CPU' | 'GPU'
+  String _catalogTab = 'All'; // 'All' | 'CPU' | 'GPU'
   String _sortBy = 'newest'; // 'newest' | 'oldest' | 'price_asc' | 'price_desc'
   bool _isLoading = false;
   bool _hasSearched = false;
@@ -27,10 +27,8 @@ class AppState extends ChangeNotifier {
   bool get hasSearched => _hasSearched;
 
   bool get hasActiveCatalogFilters {
-    final brand =
-        _catalogTab == 'CPU' ? _cpuBrandFilter : _gpuBrandFilter;
     return _searchQuery.isNotEmpty ||
-        brand != 'All' ||
+        currentBrandFilter != 'All' ||
         _seriesFilter != 'All';
   }
 
@@ -187,6 +185,7 @@ class AppState extends ChangeNotifier {
 
   void clearCatalogFilters() {
     _searchQuery = '';
+    _catalogTab = 'All';
     _cpuBrandFilter = 'All';
     _gpuBrandFilter = 'All';
     _seriesFilter = 'All';
